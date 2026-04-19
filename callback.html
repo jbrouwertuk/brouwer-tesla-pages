@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <title>Tesla OAuth — Code ontvangen</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root { color-scheme: dark; }
+    body { font-family: system-ui, -apple-system, Segoe UI, sans-serif; background:#0f1115; color:#e0e0e0; margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+    .card { max-width:760px; width:100%; background:#1a1d24; border:1px solid #2a2e38; border-radius:12px; padding:28px 32px; }
+    h1 { margin:0 0 8px; font-size:24px; }
+    .sub { color:#9da2ae; margin:0 0 24px; line-height:1.5; }
+    .code-block { font-family:ui-monospace, Menlo, Consolas, monospace; background:#0c0e13; border:1px solid #2a2e38; border-radius:8px; padding:16px; font-size:14px; color:#5ac8fa; word-break:break-all; white-space:pre-wrap; }
+    .label { display:block; margin-top:20px; margin-bottom:6px; font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:#8892a6; }
+    .row { display:flex; gap:12px; margin-top:16px; align-items:center; flex-wrap:wrap; }
+    button { background:#2563eb; color:#fff; border:0; padding:10px 18px; border-radius:8px; font-size:14px; cursor:pointer; font-weight:600; }
+    button:hover { background:#1d4fd8; }
+    button.secondary { background:#384150; }
+    button.secondary:hover { background:#4a5568; }
+    .ok { color:#22c55e; font-size:13px; }
+    .err { color:#ef4444; margin-top:16px; padding:12px; background:#2d1416; border:1px solid #5a1f23; border-radius:8px; }
+    .hint { color:#9da2ae; font-size:13px; margin-top:20px; line-height:1.5; padding-top:20px; border-top:1px solid #2a2e38; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Tesla OAuth-callback</h1>
+    <p class="sub">Tesla heeft je doorgestuurd met een autorisatie-code. Kopieer die code en plak hem in de admin-pagina van het Syntess-dashboard.</p>
+
+    <div id="success" style="display:none">
+      <span class="label">Autorisatie-code</span>
+      <div class="code-block" id="code-output"></div>
+      <div class="row">
+        <button id="copy-btn" type="button">Code kopiëren</button>
+        <span id="copy-ok" class="ok" style="display:none">✓ Gekopieerd naar klembord</span>
+      </div>
+
+      <span class="label">State (voor verificatie)</span>
+      <div class="code-block" id="state-output"></div>
+    </div>
+
+    <div id="error" class="err" style="display:none"></div>
+
+    <div id="waiting">
+      <p class="sub">Wachten op redirect vanuit Tesla…</p>
+      <p class="sub">Als je hier direct terechtkwam zonder via Tesla in te loggen, start de koppeling opnieuw via de admin-pagina.</p>
+    </div>
+
+    <div class="hint">
+      <strong>Volgende stap:</strong><br>
+      Ga terug naar <span style="font-family:ui-monospace,Menlo,Consolas,monospace;color:#5ac8fa">http://&lt;dashboard-ip&gt;:8080/admin/instellingen</span> → Tesla-tab → plak de code in het daarvoor bestemde veld → Opslaan.<br><br>
+      De code is slechts korte tijd geldig (± 5 minuten).
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('code');
+      const state = params.get('state') || '';
+      const err = params.get('error');
+      const errDesc = params.get('error_description');
+
+      const waitEl = document.getElementById('waiting');
+      const okEl = document.getElementById('success');
+      const errEl = document.getElementById('error');
+
+      if (err) {
+        waitEl.style.display = 'none';
+        errEl.style.display = 'block';
+        errEl.textContent = 'Fout van Tesla: ' + err + (errDesc ? ' — ' + errDesc : '');
+        return;
+      }
+
+      if (code) {
+        waitEl.style.display = 'none';
+        okEl.style.display = 'block';
+        document.getElementById('code-output').textContent = code;
+        document.getElementById('state-output').textContent = state || '(geen state meegegeven)';
+
+        document.getElementById('copy-btn').addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(code);
+            const ok = document.getElementById('copy-ok');
+            ok.style.display = 'inline';
+            setTimeout(() => { ok.style.display = 'none'; }, 2500);
+          } catch (e) {
+            alert('Kopiëren naar klembord mislukt. Selecteer de code handmatig en kopieer.');
+          }
+        });
+      }
+    })();
+  </script>
+</body>
+</html>
